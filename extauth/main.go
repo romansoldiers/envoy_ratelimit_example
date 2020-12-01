@@ -4,14 +4,15 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"fmt"
 	"log"
 	"net"
 	"strings"
 
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	auth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v2"
-	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
-	"github.com/gogo/googleapis/google/rpc"
+	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	auth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
+	v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	status "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc"
 )
 
@@ -20,6 +21,8 @@ type AuthorizationServer struct{}
 
 // inject a header that can be used for future rate limiting
 func (a *AuthorizationServer) Check(ctx context.Context, req *auth.CheckRequest) (*auth.CheckResponse, error) {
+	fmt.Printf("HELLOWORLD")
+	log.Printf("HELLO WORLD")
 	authHeader, ok := req.Attributes.Request.Http.Headers["authorization"]
 	var splitToken []string
 	if ok {
@@ -35,10 +38,10 @@ func (a *AuthorizationServer) Check(ctx context.Context, req *auth.CheckRequest)
 		// Normally this is where you'd go check with the system that knows if it's a valid token.
 
 		if len(token) == 3 {
+
+			log.Printf("HELLO WORLD")
 			return &auth.CheckResponse{
-				Status: &rpc.Status{
-					Code: int32(rpc.OK),
-				},
+				Status: &status.Status{Code: 5},
 				HttpResponse: &auth.CheckResponse_OkResponse{
 					OkResponse: &auth.OkHttpResponse{
 						Headers: []*core.HeaderValueOption{
@@ -55,13 +58,11 @@ func (a *AuthorizationServer) Check(ctx context.Context, req *auth.CheckRequest)
 		}
 	}
 	return &auth.CheckResponse{
-		Status: &rpc.Status{
-			Code: int32(rpc.UNAUTHENTICATED),
-		},
+		Status: &status.Status{Code: 500},
 		HttpResponse: &auth.CheckResponse_DeniedResponse{
 			DeniedResponse: &auth.DeniedHttpResponse{
-				Status: &envoy_type.HttpStatus{
-					Code: envoy_type.StatusCode_Unauthorized,
+				Status: &v3.HttpStatus{
+					Code: v3.StatusCode_Unauthorized,
 				},
 				Body: "Need an Authorization Header with a 3 character bearer token! #secure",
 			},
